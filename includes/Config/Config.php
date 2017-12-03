@@ -77,6 +77,12 @@ class Config {
             throw new ConfigException("User defined config not found at '$config'");
         }
 
+        // YOURLS-MS added for MultiSite config files
+        // example.org-config.php in /user/
+        if (file_exists($this->root . '/user/' . strtolower( $_SERVER[ 'HTTP_HOST' ] ) . '-config.php' ) ) {
+            return $this->root . '/user/' . strtolower( $_SERVER[ 'HTTP_HOST' ] ) . '-config.php';
+        }
+
         // config.php in /user/
         if (file_exists($this->root . '/user/config.php')) {
             return $this->root . '/user/config.php';
@@ -101,7 +107,9 @@ class Config {
      */
     public function define_core_constants() {
         // Check minimal config job has been properly done
-        $must_haves = array('YOURLS_DB_USER', 'YOURLS_DB_PASS', 'YOURLS_DB_NAME', 'YOURLS_DB_HOST', 'YOURLS_DB_PREFIX', 'YOURLS_SITE');
+        // YOURLS-MS remove 'YOURLS_SITE' from $must_haves at this point.
+        // YOURLS_SITE is automatically defined later in this function.
+        $must_haves = array('YOURLS_DB_USER', 'YOURLS_DB_PASS', 'YOURLS_DB_NAME', 'YOURLS_DB_HOST', 'YOURLS_DB_PREFIX');
         foreach($must_haves as $must_have) {
             if (!defined($must_have)) {
                 throw new ConfigException('Config is incomplete (missing at least '.$must_have.') Check config-sample.php and edit your config accordingly');
@@ -129,9 +137,79 @@ class Config {
         if (!defined( 'YOURLS_USERDIR' ))
             define( 'YOURLS_USERDIR', YOURLS_ABSPATH.'/user' );
 
+		/**
+		 * YOURLS-MS
+		 *
+		 * A few constants added for Autoconfigure etc.
+		 */
+
+		/**
+		 * Define YOURLS_PROTOCOL
+		 *
+		 * HTTP:// or HTTPS:// from the HTTP Headers.
+		 *
+		 * This is ugly...
+		 * There is no other reliable method that works across platforms at this time.
+		 *
+		 * TODO - Maybe this should be merged with yourls_is_ssl()
+		 *   however that function is not reliable behind load balancers and reverse-proxies.
+		 *   Additionally, YOURLS_PROTOCOL is needed before the functions are loaded.
+		 *   Other code may be able to use YOURLS_PROTOCOL in place of yourls_is_ssl().
+		 */
+        if ( !defined( 'YOURLS_PROTOCOL' ) ) {
+			if ( !empty( $_SERVER[ 'HTTPS' ] ) && $_SERVER[ 'HTTPS' ] !== 'off' ) {
+				// good in ISS and Apache
+				if ( 'on' == strtolower( $_SERVER[ 'HTTPS' ] ) ) define( 'YOURLS_PROTOCOL', 'https://' );
+				if ( '1' == $_SERVER[ 'HTTPS' ] ) define( 'YOURLS_PROTOCOL', 'https://' );
+			} elseif ( ! empty( $_SERVER[ 'HTTP_FORWARDED' ] ) && false !== strpos( strtolower( $_SERVER[ 'HTTP_FORWARDED' ] ), 'https' ) ) {
+				// new standard RFC 7239 - reverse-proxies and load balancers.
+				define( 'YOURLS_PROTOCOL', 'https://' );
+			} elseif ( !empty( $_SERVER[ 'SERVER_PORT' ] ) && ( '443' == $_SERVER[ 'SERVER_PORT' ] ) ) {
+				// Is it port 443?
+				define( 'YOURLS_PROTOCOL', 'https://' );
+			} elseif ( !empty( $_SERVER[ 'HTTP_X_FORWARDED_SSL' ] ) && ( 'on' == strtolower( $_SERVER[ 'HTTP_X_FORWARDED_SSL' ] ) ) ) {
+				// reverse-proxies and load balancers - nginx.
+				define( 'YOURLS_PROTOCOL', 'https://' );
+			} elseif ( !empty( $_SERVER[ 'HTTP_X_FORWARDED_PROTO' ] ) && ( 'https' == strtolower( $_SERVER[ 'HTTP_X_FORWARDED_PROTO' ] ) ) ) {
+				// reverse-proxies and some load balancers.
+				define( 'YOURLS_PROTOCOL', 'https://' );
+			} elseif ( !empty( $_SERVER[ 'X_FORWARDED_PROTO' ] ) && ( 'https' == strtolower( $_SERVER[ 'X_FORWARDED_PROTO' ] ) ) ) {
+				// reverse-proxies and some load balancers.
+				define( 'YOURLS_PROTOCOL', 'https://' );
+			} else {
+				// default to http://
+				define( 'YOURLS_PROTOCOL', 'http://' );
+			}
+		}
+
+		/*
+		 * YOURLS_ABSURL
+		 *
+		 * ABSolute URL of the YOURLS directory
+		 *
+		 * This is used to load files like css, js, and img.
+		 *
+		 * Allows YOURLS to have its own directory like WordPress.
+		 *   Something like 'http://vekind.org/yourls'
+		 *   See https://codex.wordpress.org/Giving_WordPress_Its_Own_Directory
+		 */
+        if ( !defined( 'YOURLS_ABSURL' ) )
+			define( 'YOURLS_ABSURL', YOURLS_PROTOCOL . $_SERVER['HTTP_HOST'] . substr( YOURLS_ABSPATH, strlen( $_SERVER['DOCUMENT_ROOT'] ) ) );
+
+		/*
+		 * YOURLS_SITE
+		 *
+		 * If not defined in the site config file
+		 *
+		 * Used solely to format shortened URLs
+		 */
+        if ( !defined( 'YOURLS_SITE' ) )
+			define( 'YOURLS_SITE', YOURLS_PROTOCOL . $_SERVER['HTTP_HOST'] );
+
         // URL of user directory
         if (!defined( 'YOURLS_USERURL' ))
-            define( 'YOURLS_USERURL', YOURLS_SITE.'/user' );
+			define( 'YOURLS_USERURL', YOURLS_ABSURL . '/user' );
+        // YOURLS-MS Replace YOURLS_SITE with YOURLS_ABSURL
 
         // physical path of asset directory
         if( !defined( 'YOURLS_ASSETDIR' ) )
@@ -139,7 +217,8 @@ class Config {
 
         // URL of asset directory
         if( !defined( 'YOURLS_ASSETURL' ) )
-            define( 'YOURLS_ASSETURL', YOURLS_SITE.'/assets' );
+			define( 'YOURLS_ASSETURL', YOURLS_ABSURL . '/assets' );
+        // YOURLS-MS Replace YOURLS_SITE with YOURLS_ABSURL
 
         // physical path of translations directory
         if (!defined( 'YOURLS_LANG_DIR' ))

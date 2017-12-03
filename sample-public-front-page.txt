@@ -14,7 +14,8 @@
 require_once( dirname(__FILE__).'/includes/load-yourls.php' );
 
 // Change this to match the URL of your public interface. Something like: http://your-own-domain-here.com/index.php
-$page = YOURLS_SITE . '/sample-public-front-page.php' ;
+// YOURLS-MS Replace YOURLS_SITE with YOURLS_ABSURL
+$page = YOURLS_ABSURL . '/sample-public-front-page.php' ;
 
 // Part to be executed if FORM has been submitted
 if ( isset( $_REQUEST['url'] ) && $_REQUEST['url'] != 'http://' ) {

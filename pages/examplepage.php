@@ -7,7 +7,8 @@ if( !defined( 'YOURLS_ABSPATH' ) ) {
 }
 
 // Display page content. Any PHP, HTML and YOURLS function can go here.
-$url = YOURLS_SITE . '/examplepage';
+// YOURLS-PV Replace YOURLS_SITE with YOURLS_ABSURL
+$url = YOURLS_ABSURL . '/examplepage';
 
 yourls_html_head( 'examplepage', 'Example page' );
 

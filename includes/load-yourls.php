@@ -18,6 +18,15 @@ if (!defined('YOURLS_CONFIGFILE')) {
     define('YOURLS_CONFIGFILE', $config->find_config());
 }
 require_once YOURLS_CONFIGFILE;
+
+/**
+ * YOURLS-MS Include MultiSite Defaults.
+ * Load the /user/multisite-config.php file (optional).
+ * This must be registered in the global scope (see above).
+ */
+if( file_exists( dirname( __DIR__ ) . '/user/multisite-config.php' ) )
+	require_once( dirname( __DIR__ ) . '/user/multisite-config.php' );
+
 $config->define_core_constants();
 
 // Initialize YOURLS with default behaviors
