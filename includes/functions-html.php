@@ -176,6 +176,10 @@ function yourls_html_footer($can_query = true) {
  * @param string $keyword Keyword to prefill the input with
  */
 function yourls_html_addnew( $url = '', $keyword = '' ) {
+    $pre = yourls_apply_filter( 'shunt_html_addnew', false, $url, $keyword );
+    if ( false !== $pre ) {
+        return $pre;
+    }
 	?>
 	<main role="main">
 	<div id="new_url">
@@ -245,6 +249,7 @@ function yourls_html_tfooter( $params = array() ) {
 						$_options = array(
 							'keyword'      => yourls__( 'Short URL' ),
 							'url'          => yourls__( 'URL' ),
+							'title'        => yourls__( 'Title' ),
 							'timestamp'    => yourls__( 'Date' ),
 							'ip'           => yourls__( 'IP' ),
 							'clicks'       => yourls__( 'Clicks' ),
